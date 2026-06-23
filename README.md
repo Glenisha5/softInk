@@ -1,6 +1,6 @@
 # ✒️ softInk 
 ## *Crafted with soul.*
-*Where words find their homes."
+*Where words find their homes.*
 
 **softInk** is a minimalist poetry platform designed to express emotions through words. It is a digital space where poetry, thoughts, and creativity flow freely—soft like ink, deep like emotion.
 
