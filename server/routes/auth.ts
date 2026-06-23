@@ -1,10 +1,13 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 import { User } from "../models/User.ts";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "dev_jwt_secret";
+const GOOGLE_CLIENT_ID=process.env.GOOGLE_CLIENT_ID||"";
+const googleClient=new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // REGISTER
 router.post("/register", async (req, res) => {
@@ -44,18 +47,32 @@ router.post("/login", async (req, res) => {
 // GOOGLE LOGIN
 router.post("/google", async (req, res) => {
   try {
-    const { email, name, googleId } = req.body;
-    if (!email) return res.status(400).json({ error: "Email is required" });
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ error: "Missing Google credential" });
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload?.email) return res.status(400).json({ error: "Invalid Google token" });
+
+    const { email, name, sub: googleId } = payload;
+
     let user = await User.findOne({ email });
     if (!user) {
       const username = name || email.split("@")[0];
-      user = await User.create({ username, email, googleId: googleId || email });
+      user = await User.create({ username, email, googleId });
+    } else if (!user.googleId) {
+      user.googleId = googleId;
+      await user.save();
     }
+
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "7d" });
     res.json({ token, username: user.username, email: user.email });
   } catch (err) {
     console.error("Google login error:", err);
-    res.status(500).json({ error: "Server error", message: (err as Error).message });
+    res.status(400).json({ error: "Invalid Google token", message: (err as Error).message });
   }
 });
 

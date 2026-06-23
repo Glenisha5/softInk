@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface LoginProps {
   onLogin: (token: string, username: string) => void;
@@ -7,12 +8,11 @@ interface LoginProps {
 const API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000";
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [screen, setScreen] = useState<'choice' | 'email' | 'google'>('choice');
+  const [screen, setScreen] = useState<'choice' | 'email'>('choice');
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [socialName, setSocialName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -39,30 +39,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'microsoft') => {
+  const handleGoogleSuccess = async (credentialResponse: any) => {
     setError('');
-
-    if (provider === 'microsoft') {
-      setError('Microsoft sign-in is not configured yet. Add Azure app credentials to enable it.');
-      return;
-    }
-
-    if (!email.trim()) {
-      setError('Enter your Gmail address first.');
-      return;
-    }
-
     setLoading(true);
     try {
-      const displayName = socialName.trim() || username.trim() || email.split('@')[0];
       const res = await fetch(`${API_URL}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim(),
-          name: displayName,
-          googleId: email.trim(),
-        }),
+        body: JSON.stringify({ credential: credentialResponse.credential }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Google sign-in failed');
@@ -82,31 +66,28 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h2 className="text-4xl font-serif-heading text-neutral-800 mb-2">
-            {screen === 'choice' ? 'Welcome back' : screen === 'google' ? 'Continue with Google' : isRegister ? 'Create account' : 'Sign in'}
+            {screen === 'choice' ? 'Welcome back' : isRegister ? 'Create account' : 'Sign in'}
           </h2>
           <p className="text-neutral-500 italic">
             {screen === 'choice'
               ? 'Choose how you want to enter the library'
-              : screen === 'google'
-                ? 'Use your Gmail address to continue'
-                : isRegister
-                  ? 'Join to read the poems'
-                  : 'Sign in to read the poems'}
+              : isRegister
+                ? 'Join to read the poems'
+                : 'Sign in to read the poems'}
           </p>
         </div>
 
         <div className="bg-white border border-neutral-100 rounded-3xl shadow-[0_16px_40px_rgba(0,0,0,0.06)] p-8 flex flex-col gap-4">
           {screen === 'choice' && (
             <>
-              <button
-                onClick={() => setScreen('google')}
-                className="w-full rounded-xl border border-blue-400 bg-white px-4 py-3.5 text-sm text-neutral-800 shadow-sm transition-transform hover:-translate-y-0.5"
-              >
-                <span className="inline-flex items-center justify-center gap-3">
-                  <span className="text-xl leading-none">G</span>
-                  <span>Continue with Google</span>
-                </span>
-              </button>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setError('Google sign-in failed')}
+                />
+              </div>
+
+              {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
               <div className="flex items-center gap-4 py-1">
                 <div className="h-px flex-1 bg-neutral-200" />
@@ -133,42 +114,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   Log in
                 </button>
               </div>
-            </>
-          )}
-
-          {screen === 'google' && (
-            <>
-              <p className="text-sm text-neutral-500 leading-relaxed text-center">
-                Use a Gmail address to continue. This project is wired for email-based Google sign-in rather than a full OAuth popup yet.
-              </p>
-              <input
-                type="text"
-                placeholder="Display name"
-                value={socialName}
-                onChange={e => setSocialName(e.target.value)}
-                className="w-full border border-neutral-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-neutral-400 transition-colors"
-              />
-              <input
-                type="email"
-                placeholder="Gmail address"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full border border-neutral-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-neutral-400 transition-colors"
-              />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <button
-                onClick={() => handleSocialLogin('google')}
-                disabled={loading}
-                className="w-full rounded-xl bg-neutral-800 px-4 py-3 text-sm uppercase tracking-widest text-white hover:bg-neutral-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Please wait...' : 'Continue with Google'}
-              </button>
-              <button
-                onClick={() => setScreen('choice')}
-                className="w-full text-sm text-neutral-500 underline underline-offset-4"
-              >
-                Back
-              </button>
             </>
           )}
 
