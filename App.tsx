@@ -5,7 +5,6 @@ import { PoemLibrary } from './components/PoemLibrary';
 import { PoemDisplay } from './components/PoemDisplay';
 import { About } from './components/About';
 import { Contact } from './components/Contact';
-import { Login } from './components/Login';
 import { fetchPoemsByLanguage } from './services/poemService';
 
 declare global {
@@ -16,37 +15,15 @@ declare global {
   }
 }
 
-type View = 'home' | 'about' | 'contact' | 'login';
+type View = 'home' | 'about' | 'contact';
 
 const App: React.FC = () => {
   const [language, setLanguage] = useState<Language | null>(null);
   const [selectedPoem, setSelectedPoem] = useState<PoemResponse | null>(null);
-  const [pendingPoem, setPendingPoem] = useState<PoemResponse | null>(null);
   const [currentView, setCurrentView] = useState<View>('home');
   const [poems, setPoems] = useState<PoemResponse[]>([]);
   const [isLoadingPoems, setIsLoadingPoems] = useState(false);
   const [poemError, setPoemError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [username, setUsername] = useState<string | null>(localStorage.getItem('username'));
-
-  const handleLogin = (tok: string, user: string) => {
-    setToken(tok);
-    setUsername(user);
-    if (pendingPoem) {
-      setSelectedPoem(pendingPoem);
-      setPendingPoem(null);
-    }
-    setCurrentView('home');
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    setToken(null);
-    setUsername(null);
-    setPendingPoem(null);
-    handleBackToHome();
-  };
 
   const handleLanguageSelect = (lang: Language) => {
     setLanguage(lang);
@@ -57,13 +34,7 @@ const App: React.FC = () => {
   };
 
   const handlePoemSelect = (poem: PoemResponse) => {
-    if (token) {
-      setSelectedPoem(poem);
-      return;
-    }
-
-    setPendingPoem(poem);
-    setCurrentView('login');
+    setSelectedPoem(poem);
   };
 
   const handleReset = () => {
@@ -74,7 +45,6 @@ const App: React.FC = () => {
     setCurrentView('home');
     setLanguage(null);
     setSelectedPoem(null);
-    setPendingPoem(null);
     setPoems([]);
     setPoemError(null);
   };
@@ -140,72 +110,54 @@ const App: React.FC = () => {
           >
             Contact
           </button>
-          {token && (
-            <>
-              <div className="h-4 w-px bg-neutral-200" />
-              <span className="text-xs text-neutral-500">Hi, {username}</span>
-              <button
-                onClick={handleLogout}
-                className="text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-800 transition-colors"
-              >
-                Logout
-              </button>
-            </>
-          )}
         </nav>
       </header>
 
       <main className="flex-grow">
-        {currentView === 'login' ? (
-          <Login onLogin={handleLogin} />
-        ) : (
-          <>
-            {currentView === 'about' && <About onClose={handleBackToHome} />}
-            {currentView === 'contact' && <Contact onClose={handleBackToHome} />}
+        {currentView === 'about' && <About onClose={handleBackToHome} />}
+        {currentView === 'contact' && <Contact onClose={handleBackToHome} />}
 
-            {currentView === 'home' && !language && (
-              <div className="max-w-4xl mx-auto mt-20 text-center px-4">
-                <div className="mb-12 animate-in fade-in duration-1000">
-                  <h1 className="text-6xl md:text-8xl font-serif-heading text-neutral-800 mb-6">
-                    Where words <br /> find their <span className="italic">home</span>.
-                  </h1>
-                  <p className="text-neutral-500 text-lg max-w-lg mx-auto leading-relaxed">
-                    Here, poems rest—written across time, in English and Hindi.
-                  </p>
-                </div>
-                <LanguageSelector selectedLanguage={language} onSelect={handleLanguageSelect} />
+        {currentView === 'home' && !language && (
+          <div className="max-w-4xl mx-auto mt-20 text-center px-4">
+            <div className="mb-12 animate-in fade-in duration-1000">
+              <h1 className="text-6xl md:text-8xl font-serif-heading text-neutral-800 mb-6">
+                Where words <br /> find their <span className="italic">home</span>.
+              </h1>
+              <p className="text-neutral-500 text-lg max-w-lg mx-auto leading-relaxed">
+                Here, poems rest—written across time, in English and Hindi.
+              </p>
+            </div>
+            <LanguageSelector selectedLanguage={language} onSelect={handleLanguageSelect} />
+          </div>
+        )}
+
+        {currentView === 'home' && language && !selectedPoem && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {isLoadingPoems && (
+              <div className="max-w-6xl mx-auto px-4 py-12 text-center text-neutral-500 italic">
+                Loading poems from the database...
               </div>
             )}
-
-            {currentView === 'home' && language && !selectedPoem && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                {isLoadingPoems && (
-                  <div className="max-w-6xl mx-auto px-4 py-12 text-center text-neutral-500 italic">
-                    Loading poems from the database...
-                  </div>
-                )}
-                {poemError && (
-                  <div className="max-w-6xl mx-auto px-4 py-12 text-center text-red-500">
-                    {poemError}
-                  </div>
-                )}
-                {!isLoadingPoems && !poemError && (
-                  <PoemLibrary language={language} poems={poems} onSelectPoem={handlePoemSelect} />
-                )}
+            {poemError && (
+              <div className="max-w-6xl mx-auto px-4 py-12 text-center text-red-500">
+                {poemError}
               </div>
             )}
-
-            {currentView === 'home' && selectedPoem && language && (
-              <div className="animate-in fade-in duration-500">
-                <PoemDisplay
-                  poem={selectedPoem}
-                  language={language}
-                  onReset={handleReset}
-                  isLoading={false}
-                />
-              </div>
+            {!isLoadingPoems && !poemError && (
+              <PoemLibrary language={language} poems={poems} onSelectPoem={handlePoemSelect} />
             )}
-          </>
+          </div>
+        )}
+
+        {currentView === 'home' && selectedPoem && language && (
+          <div className="animate-in fade-in duration-500">
+            <PoemDisplay
+              poem={selectedPoem}
+              language={language}
+              onReset={handleReset}
+              isLoading={false}
+            />
+          </div>
         )}
       </main>
 

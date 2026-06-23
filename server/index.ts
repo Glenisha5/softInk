@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import poemRoutes from "./routes/poems.ts";
-import authRoutes from "./routes/auth.ts";
 import feedbackRoutes from "./routes/feedback.ts"
 
 dotenv.config();
@@ -45,4 +44,3 @@ app.get("/test", (req, res) => {
 });
 
 app.use("/api/poems", poemRoutes);
-app.use("/api/auth",authRoutes);
