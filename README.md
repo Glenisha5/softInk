@@ -28,7 +28,8 @@ The goal is to create a soft, modern, and expressive platform where words matter
 - 📫A way to reach out and share thoughts.
 
 ## 😇The spirit Behind it
-*Ink.Paper.Soul*
+>*Ink.Paper.Soul*
+
 Every poem here was written somewhere between memory and longing - about growing up,letting go ,and finding home in the smallest things.
 
 <p align="center"><i>Made with ink,paper and a little bit of soul.</i></p>
